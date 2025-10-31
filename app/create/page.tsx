@@ -13,41 +13,48 @@ export default function CreateBlog() {
   const [languages, setLanguages] = useState<string[]>([]);
 
   useEffect(() => {
-    const fetchLanguages = async () => {
-      try {
-        const res = await axios.get("http://localhost:8000/languages");
-        setLanguages(res.data.languages);
-      } catch (err) {
-        console.error("Error fetching languages:", err);
-      }
-    };
-    fetchLanguages();
-  }, []);
+  const fetchLanguages = async () => {
+    try {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/languages`);
+      setLanguages(res.data.languages);
+    } catch (err) {
+      console.error("Error fetching languages:", err);
+    }
+  };
+  fetchLanguages();
+}, []);
 
   const generateBlog = async () => {
-    try {
-      const res = await axios.post("http://localhost:8000/generate", {
+  try {
+    const res = await axios.post(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/generate`,
+      {
         prompt: topic,
         language: language, 
-      });
-      setContent(res.data.content || "No content generated.");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+      }
+    );
+    setContent(res.data.content || "No content generated.");
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   const saveBlog = async () => {
-    try {
-      await axios.post("http://localhost:8000/blogs", { title, content, tags });
-      alert("Blog saved successfully!");
-      setTopic("");
-      setTitle("");
-      setContent("");
-      setTags("");
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/blogs`, {
+      title,
+      content,
+      tags,
+    });
+    alert("Blog saved successfully!");
+    setTopic("");
+    setTitle("");
+    setContent("");
+    setTags("");
+  } catch (err) {
+    console.error(err);
+  }
+};
 
   return (
     <div className="bg-gradient-to-r from-gray-100 to-pink-200 min-h-screen">

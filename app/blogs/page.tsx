@@ -16,12 +16,16 @@ export default function BlogsPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
 
   useEffect(() => {
-    const fetchBlogs = async () => {
-      const res = await axios.get("http://localhost:8000/blogs");
+  const fetchBlogs = async () => {
+    try {
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/blogs`);
       setBlogs(res.data);
-    };
-    fetchBlogs();
-  }, []);
+    } catch (err) {
+      console.error("Error fetching blogs:", err);
+    }
+  };
+  fetchBlogs();
+}, []);
 
   return (
     <div className="bg-gradient-to-r from-gray-100 to-pink-200 min-h-screen">

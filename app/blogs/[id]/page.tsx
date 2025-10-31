@@ -18,16 +18,16 @@ export default function BlogDetail() {
     const [blog, setBlog] = useState<Blog | null>(null);
 
     useEffect(() => {
-        const fetchBlog = async () => {
-            try {
-                const res = await axios.get(`http://localhost:8000/blogs/${id}`);
-                setBlog(res.data);
-            } catch (error) {
-                console.error("Error fetching blog:", error);
-            }
-        };
-        if (id) fetchBlog();
-    }, [id]);
+    const fetchBlog = async () => {
+        try {
+            const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/blogs/${id}`);
+            setBlog(res.data);
+        } catch (error) {
+            console.error("Error fetching blog:", error);
+        }
+    };
+    if (id) fetchBlog();
+}, [id]);
 
     if (!blog)
         return (
