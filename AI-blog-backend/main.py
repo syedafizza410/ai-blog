@@ -43,18 +43,17 @@ def root():
 async def get_languages():
     try:
         prompt_text = """
-List the 20 most popular and widely spoken languages in the world.
-Return only the language names in a clean JSON array format like:
-["English", "Spanish", "Chinese", ...]
+List 50 widely spoken languages in the world, including all scripts (Latin, Cyrillic, Arabic, Devanagari, etc.).
+Return only the language names in a JSON array format, like:
+["English", "Spanish", "Chinese", "Hindi", "Urdu", "Arabic", ...]
 """
-        response = genai.generate_text(
-            model="gemini-2.0-flash",
-            prompt=prompt_text
-        )
+        response = genai.generate_text(model="gemini-2.0-flash", prompt=prompt_text)
 
         languages_raw = ""
-        if response and "candidates" in response and len(response["candidates"]) > 0:
-            languages_raw = response["candidates"][0].get("content") or response["candidates"][0].get("output_text", "")
+        if response and "candidates" in response:
+            languages_raw = " ".join(
+                c.get("content") or c.get("output_text", "") for c in response["candidates"]
+            )
 
         clean_text = re.search(r"\[.*\]", languages_raw, re.DOTALL)
         languages = json.loads(clean_text.group()) if clean_text else []
@@ -63,38 +62,38 @@ Return only the language names in a clean JSON array format like:
 
     except Exception as e:
         print("Error fetching languages:", e)
-        return {"languages": []}  
+        return {"languages": []}
 
 class Prompt(BaseModel):
     prompt: str
-    language: str = "English"  
+    language: str = "English"
 
 @app.post("/generate")
 async def generate_blog(prompt: Prompt):
     try:
         structured_prompt = f"""
 Write a detailed, well-structured blog about: "{prompt.prompt}".
-The blog must be entirely written in {prompt.language} language.
+The blog must be entirely written in {prompt.language}.
 Make it sound natural and native for {prompt.language} readers.
 
 Formatting rules:
-- Use headings (H1, H2, H3)
+- Headings (H1, H2, H3)
 - Numbered lists for main categories
 - Bullet points for sub-items
 - Short, clear paragraphs
 - Markdown formatting
 """
 
-        response = genai.generate_text(
-            model="gemini-2.0-flash",
-            prompt=structured_prompt
-        )
-
         generated_text = ""
-        if response and "candidates" in response and len(response["candidates"]) > 0:
-            generated_text = response["candidates"][0].get("content") or response["candidates"][0].get("output_text", "")
+        for _ in range(2):  
+            response = genai.generate_text(model="gemini-2.0-flash", prompt=structured_prompt)
+            if response and "candidates" in response:
+                for c in response["candidates"]:
+                    generated_text += (c.get("content") or c.get("output_text", "")) + "\n\n"
+            if generated_text.strip():
+                break
 
-        if not generated_text:
+        if not generated_text.strip():
             generated_text = "No content generated."
 
         return {"content": generated_text}
