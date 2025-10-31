@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import os, json, re
+import os, json
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -44,19 +44,17 @@ async def get_languages():
     try:
         prompt_text = """
 List 50 widely spoken languages in the world, including all scripts (Latin, Cyrillic, Arabic, Devanagari, etc.).
-Return only the language names in a JSON array format, like:
+Return only the language names in a JSON array like:
 ["English", "Spanish", "Chinese", "Hindi", "Urdu", "Arabic", ...]
+Do not add explanations, just the array.
 """
-        response = genai.generate_text(model="gemini-2.0-flash", prompt=prompt_text)
+        response = genai.chat.create(
+            model="gemini-2.0",
+            messages=[{"role": "user", "content": prompt_text}]
+        )
 
-        languages_raw = ""
-        if response and "candidates" in response:
-            languages_raw = " ".join(
-                c.get("content") or c.get("output_text", "") for c in response["candidates"]
-            )
-
-        clean_text = re.search(r"\[.*\]", languages_raw, re.DOTALL)
-        languages = json.loads(clean_text.group()) if clean_text else []
+        text = response.last if hasattr(response, "last") else ""
+        languages = json.loads(text) if text else []
 
         return {"languages": languages}
 
@@ -83,16 +81,12 @@ Formatting rules:
 - Short, clear paragraphs
 - Markdown formatting
 """
+        response = genai.chat.create(
+            model="gemini-2.0",
+            messages=[{"role": "user", "content": structured_prompt}]
+        )
 
-        generated_text = ""
-        for _ in range(2):  
-            response = genai.generate_text(model="gemini-2.0-flash", prompt=structured_prompt)
-            if response and "candidates" in response:
-                for c in response["candidates"]:
-                    generated_text += (c.get("content") or c.get("output_text", "")) + "\n\n"
-            if generated_text.strip():
-                break
-
+        generated_text = response.last if hasattr(response, "last") else ""
         if not generated_text.strip():
             generated_text = "No content generated."
 
