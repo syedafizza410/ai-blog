@@ -15,7 +15,7 @@ API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     raise ValueError("GEMINI_API_KEY is missing in .env file!")
 
-client = genai.Client(api_key=API_KEY) 
+genai.configure(api_key=API_KEY)
 
 Base.metadata.create_all(bind=engine)
 
@@ -42,17 +42,18 @@ def root():
 @app.get("/languages")
 async def get_languages():
     try:
-        prompt = """
+        prompt_text = """
 List the 20 most popular and widely spoken languages in the world.
 Return only the language names in a clean JSON array format like:
 ["English", "Spanish", "Chinese", ...]
 """
-        response = client.models.generate_content(
+
+        response = genai.generate_text(
             model="gemini-2.0-flash",
-            contents=prompt
+            prompt=prompt_text
         )
 
-        raw_text = getattr(response, "text", "[]")
+        raw_text = getattr(response, "result", "[]")
 
         try:
             clean_text = re.search(r"\[.*\]", raw_text, re.DOTALL)
@@ -64,9 +65,7 @@ Return only the language names in a clean JSON array format like:
 
     except Exception as e:
         print("Error fetching languages:", e)
-        return {
-            "languages": ["English", "Spanish", "Chinese", "Hindi", "Arabic"]
-        }
+        return {"languages": ["English", "Spanish", "Chinese", "Hindi", "Arabic"]}
 
 class Prompt(BaseModel):
     prompt: str
@@ -77,26 +76,23 @@ async def generate_blog(prompt: Prompt):
     try:
         structured_prompt = f"""
 Write a detailed, well-structured blog about: "{prompt.prompt}".
-The blog must be entirely written in {prompt.language} language — even if the topic is in another language.
+The blog must be entirely written in {prompt.language} language.
 Make it sound natural and native for {prompt.language} readers.
 
 Formatting rules:
-- Use headings (H1, H2, H3) for main sections
+- Use headings (H1, H2, H3)
 - Numbered lists for main categories
 - Bullet points for sub-items
 - Short, clear paragraphs
 - Markdown formatting
-Keep it professional, readable, and SEO-friendly.
 """
 
-        response = client.models.generate_content(
+        response = genai.generate_text(
             model="gemini-2.0-flash",
-            contents=structured_prompt
+            prompt=structured_prompt
         )
 
-        generated_text = getattr(response, "text", None) or "No content generated."
-        print("Gemini response:", response)
-
+        generated_text = getattr(response, "result", None) or "No content generated."
         return {"content": generated_text}
 
     except Exception as e:
