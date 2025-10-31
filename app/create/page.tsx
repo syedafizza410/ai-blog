@@ -12,7 +12,6 @@ export default function CreateBlog() {
   const [language, setLanguage] = useState("English");
   const [languages, setLanguages] = useState<string[]>([]);
 
-  // Fetch top languages from backend (Gemini-generated)
   useEffect(() => {
     const fetchLanguages = async () => {
       try {
@@ -29,7 +28,7 @@ export default function CreateBlog() {
     try {
       const res = await axios.post("http://localhost:8000/generate", {
         prompt: topic,
-        language: language, // send language to backend
+        language: language, 
       });
       setContent(res.data.content || "No content generated.");
     } catch (err) {
@@ -58,7 +57,6 @@ export default function CreateBlog() {
           Create Your Blog
         </h2>
 
-        {/* Topic input */}
         <input
           type="text"
           placeholder="Enter topic (any language)"
@@ -67,7 +65,6 @@ export default function CreateBlog() {
           className="border p-2 w-full rounded text-black"
         />
 
-        {/* Language selector */}
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
@@ -90,7 +87,6 @@ export default function CreateBlog() {
           Generate Content
         </button>
 
-        {/* AI Generated Blog */}
         {content && (
           <div className="space-y-4 mt-4">
             <input
