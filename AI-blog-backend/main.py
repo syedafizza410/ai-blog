@@ -47,25 +47,23 @@ List the 20 most popular and widely spoken languages in the world.
 Return only the language names in a clean JSON array format like:
 ["English", "Spanish", "Chinese", ...]
 """
-
         response = genai.generate_text(
             model="gemini-2.0-flash",
             prompt=prompt_text
         )
 
-        raw_text = getattr(response, "result", "[]")
+        languages_raw = ""
+        if response and "candidates" in response and len(response["candidates"]) > 0:
+            languages_raw = response["candidates"][0].get("content") or response["candidates"][0].get("output_text", "")
 
-        try:
-            clean_text = re.search(r"\[.*\]", raw_text, re.DOTALL)
-            languages = json.loads(clean_text.group()) if clean_text else []
-        except Exception:
-            languages = ["English", "Spanish", "Chinese", "Hindi", "Arabic"]
+        clean_text = re.search(r"\[.*\]", languages_raw, re.DOTALL)
+        languages = json.loads(clean_text.group()) if clean_text else []
 
         return {"languages": languages}
 
     except Exception as e:
         print("Error fetching languages:", e)
-        return {"languages": ["English", "Spanish", "Chinese", "Hindi", "Arabic"]}
+        return {"languages": []}  
 
 class Prompt(BaseModel):
     prompt: str
@@ -92,7 +90,13 @@ Formatting rules:
             prompt=structured_prompt
         )
 
-        generated_text = getattr(response, "result", None) or "No content generated."
+        generated_text = ""
+        if response and "candidates" in response and len(response["candidates"]) > 0:
+            generated_text = response["candidates"][0].get("content") or response["candidates"][0].get("output_text", "")
+
+        if not generated_text:
+            generated_text = "No content generated."
+
         return {"content": generated_text}
 
     except Exception as e:
