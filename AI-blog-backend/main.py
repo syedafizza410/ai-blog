@@ -48,16 +48,14 @@ Return only the language names in a JSON array like:
 ["English", "Spanish", "Chinese", "Hindi", "Urdu", "Arabic", ...]
 Do not add explanations, just the array.
 """
-        response = genai.generate_text(
-            model="gemini-2.0-flash",
-            prompt=prompt_text
+        response = genai.chat.create(
+            model="gemini-2.0",
+            messages=[{"role": "user", "content": prompt_text}]
         )
 
-        languages_raw = ""
-        if response and "candidates" in response and len(response["candidates"]) > 0:
-            languages_raw = response["candidates"][0].get("content", "")
+        text = getattr(response, "last", {}).get("content", "")
+        languages = json.loads(text) if text else []
 
-        languages = json.loads(languages_raw) if languages_raw else []
         return {"languages": languages}
 
     except Exception as e:
@@ -83,16 +81,12 @@ Formatting rules:
 - Short, clear paragraphs
 - Markdown formatting
 """
-
-        response = genai.generate_text(
-            model="gemini-2.0-flash",
-            prompt=structured_prompt
+        response = genai.chat.create(
+            model="gemini-2.0",
+            messages=[{"role": "user", "content": structured_prompt}]
         )
 
-        generated_text = ""
-        if response and "candidates" in response and len(response["candidates"]) > 0:
-            generated_text = response["candidates"][0].get("content", "")
-
+        generated_text = getattr(response, "last", {}).get("content", "")
         if not generated_text.strip():
             generated_text = "No content generated."
 
