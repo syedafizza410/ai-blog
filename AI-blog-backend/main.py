@@ -110,3 +110,11 @@ def get_blog(blog_id: int, db: Session = Depends(get_db)):
     if blog:
         return blog
     return {"error": "Blog not found"}
+
+
+from models import Base
+from database import engine
+
+print("🛠️ Creating tables...")
+Base.metadata.create_all(bind=engine)
+print("✅ Tables created successfully!")
