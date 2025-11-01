@@ -11,13 +11,11 @@ from models import Base, Blog
 from schemas import BlogCreate, BlogResponse
 
 load_dotenv()
-
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     raise ValueError("GEMINI_API_KEY is missing in .env file!")
 
 genai.configure(api_key=API_KEY)
-
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Blog API")
@@ -36,6 +34,10 @@ def get_db():
     finally:
         db.close()
 
+class Prompt(BaseModel):
+    prompt: str
+    language: str = "English"
+
 @app.get("/")
 def root():
     return {"message": "AI Blog Backend is running!"}
@@ -49,20 +51,14 @@ Return only the language names in a JSON array like:
 ["English", "Spanish", "Chinese", "Hindi", "Urdu", "Arabic", ...]
 Do not add explanations, just the array.
 """
-        response = genai.chat.completions.create(
-            model="gemini-2.0",
-            messages=[{"role": "user", "content": prompt_text}]
-        )
-        text = response.choices[0].message.content
-        languages = json.loads(text) if text else []
+        model = genai.GenerativeModel("models/gemini-2.0-flash")
+        response = model.generate_content(prompt_text)
+        languages_raw = getattr(response, "text", "").strip()
+        languages = json.loads(languages_raw) if languages_raw else []
         return {"languages": languages}
     except Exception as e:
         print("Error fetching languages:", e)
         return {"languages": []}
-
-class Prompt(BaseModel):
-    prompt: str
-    language: str = "English"
 
 @app.post("/generate")
 async def generate_blog(prompt: Prompt):
@@ -79,15 +75,10 @@ Formatting rules:
 - Short, clear paragraphs
 - Markdown formatting
 """
-        response = genai.chat.completions.create(
-            model="gemini-2.0",
-            messages=[{"role": "user", "content": structured_prompt}]
-        )
-        generated_text = response.choices[0].message.content
-        if not generated_text.strip():
-            generated_text = "No content generated."
+        model = genai.GenerativeModel("models/gemini-2.0-flash")
+        response = model.generate_content(structured_prompt)
+        generated_text = getattr(response, "text", "").strip() or "No content generated."
         return {"content": generated_text}
-
     except Exception as e:
         print("Error generating blog:", e)
         return {"error": str(e)}
