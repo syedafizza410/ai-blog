@@ -4,18 +4,20 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import os, json
 from dotenv import load_dotenv
+import google.generativeai as genai
 
 from database import SessionLocal, engine
 from models import Base, Blog
 from schemas import BlogCreate, BlogResponse
 
-# --- Import old-style client ---
-from google.ai import generativelanguage as gl
-from google.ai.generativelanguage.types import TextPrompt, GenerateTextRequest
-
 load_dotenv()
 
-# Database setup
+API_KEY = os.getenv("GEMINI_API_KEY")
+if not API_KEY:
+    raise ValueError("GEMINI_API_KEY is missing in .env file!")
+
+genai.configure(api_key=API_KEY)
+
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Blog API")
@@ -34,10 +36,6 @@ def get_db():
     finally:
         db.close()
 
-# --- Old-style client ---
-client = gl.TextServiceClient()
-model_name = "models/text-bison-001"  # Use Gemini text model
-
 @app.get("/")
 def root():
     return {"message": "AI Blog Backend is running!"}
@@ -51,13 +49,12 @@ Return only the language names in a JSON array like:
 ["English", "Spanish", "Chinese", "Hindi", "Urdu", "Arabic", ...]
 Do not add explanations, just the array.
 """
-        request = GenerateTextRequest(
-            model=model_name,
-            prompt=TextPrompt(text=prompt_text)
+        response = genai.chat.completions.create(
+            model="gemini-2.0",
+            messages=[{"role": "user", "content": prompt_text}]
         )
-        response = client.generate_text(request=request)
-        languages_raw = response.output[0].content if response.output else ""
-        languages = json.loads(languages_raw) if languages_raw else []
+        text = response.choices[0].message.content
+        languages = json.loads(text) if text else []
         return {"languages": languages}
     except Exception as e:
         print("Error fetching languages:", e)
@@ -82,13 +79,13 @@ Formatting rules:
 - Short, clear paragraphs
 - Markdown formatting
 """
-        request = GenerateTextRequest(
-            model=model_name,
-            prompt=TextPrompt(text=structured_prompt)
+        response = genai.chat.completions.create(
+            model="gemini-2.0",
+            messages=[{"role": "user", "content": structured_prompt}]
         )
-        response = client.generate_text(request=request)
-        generated_text = response.output[0].content if response.output else "No content generated."
-
+        generated_text = response.choices[0].message.content
+        if not generated_text.strip():
+            generated_text = "No content generated."
         return {"content": generated_text}
 
     except Exception as e:
