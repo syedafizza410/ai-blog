@@ -11,50 +11,56 @@ export default function CreateBlog() {
   const [tags, setTags] = useState("");
   const [language, setLanguage] = useState("English");
   const [languages, setLanguages] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false); // ✅ Loading state
 
   useEffect(() => {
-  const fetchLanguages = async () => {
-    try {
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/languages`);
-      setLanguages(res.data.languages);
-    } catch (err) {
-      console.error("Error fetching languages:", err);
-    }
-  };
-  fetchLanguages();
-}, []);
+    const fetchLanguages = async () => {
+      try {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/languages`);
+        setLanguages(res.data.languages);
+      } catch (err) {
+        console.error("Error fetching languages:", err);
+      }
+    };
+    fetchLanguages();
+  }, []);
 
   const generateBlog = async () => {
-  try {
-    const res = await axios.post(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/generate`,
-      {
-        prompt: topic,
-        language: language, 
-      }
-    );
-    setContent(res.data.content || "No content generated.");
-  } catch (err) {
-    console.error(err);
-  }
-};
+    try {
+      setLoading(true); // start loading
+      setContent("");   // clear previous content
+      const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/generate`,
+        {
+          prompt: topic,
+          language: language,
+        }
+      );
+      setContent(res.data.content || "No content generated.");
+    } catch (err) {
+      console.error(err);
+      setContent("Error generating content. Please try again.");
+    } finally {
+      setLoading(false); // stop loading
+    }
+  };
 
   const saveBlog = async () => {
-  try {
-    await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/blogs`, {
-      title,
-      content,
-      tags,
-    });
-    alert("Blog saved successfully!");
-    setTopic("");
-    setTitle("");
-    setContent("");
-    setTags("");
-  } catch (err) {
-    console.error(err);
-  }
-};
+    try {
+      await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/blogs`, {
+        title,
+        content,
+        tags,
+      });
+      alert("Blog saved successfully!");
+      setTopic("");
+      setTitle("");
+      setContent("");
+      setTags("");
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   return (
     <div className="bg-gradient-to-r from-gray-100 to-pink-200 min-h-screen">
@@ -94,7 +100,15 @@ export default function CreateBlog() {
           Generate Content
         </button>
 
-        {content && (
+        {/* ✅ Loading indicator */}
+        {loading && (
+          <div className="text-center text-gray-700 font-semibold mt-4">
+            📝 AI is generating content, please wait...
+          </div>
+        )}
+
+        {/* ✅ Show content only when generated */}
+        {content && !loading && (
           <div className="space-y-4 mt-4">
             <input
               type="text"
