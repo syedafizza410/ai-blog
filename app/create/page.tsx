@@ -11,7 +11,7 @@ export default function CreateBlog() {
   const [tags, setTags] = useState("");
   const [language, setLanguage] = useState("English");
   const [languages, setLanguages] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false); // ✅ Loading state
+  const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
     const fetchLanguages = async () => {
@@ -27,8 +27,8 @@ export default function CreateBlog() {
 
   const generateBlog = async () => {
     try {
-      setLoading(true); // start loading
-      setContent("");   // clear previous content
+      setLoading(true); 
+      setContent("");   
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/generate`,
         {
@@ -41,7 +41,7 @@ export default function CreateBlog() {
       console.error(err);
       setContent("Error generating content. Please try again.");
     } finally {
-      setLoading(false); // stop loading
+      setLoading(false); 
     }
   };
 
@@ -100,14 +100,12 @@ export default function CreateBlog() {
           Generate Content
         </button>
 
-        {/* ✅ Loading indicator */}
         {loading && (
           <div className="text-center text-gray-700 font-semibold mt-4">
-            📝 AI is generating content, please wait...
+            📝 Our AI is generating content, please wait...
           </div>
         )}
 
-        {/* ✅ Show content only when generated */}
         {content && !loading && (
           <div className="space-y-4 mt-4">
             <input
