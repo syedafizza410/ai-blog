@@ -3,3 +3,4 @@ uvicorn
 python-dotenv
 sqlalchemy
 google-generativeai
+psycopg2-binary
