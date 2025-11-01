@@ -54,7 +54,15 @@ Do not add explanations, just the array.
         model = genai.GenerativeModel("models/gemini-2.0-flash")
         response = model.generate_content(prompt_text)
         languages_raw = getattr(response, "text", "").strip()
-        languages = json.loads(languages_raw) if languages_raw else []
+
+        start = languages_raw.find("[")
+        end = languages_raw.rfind("]") + 1
+        if start != -1 and end != -1:
+            languages_clean = languages_raw[start:end]
+            languages = json.loads(languages_clean)
+        else:
+            languages = []
+
         return {"languages": languages}
     except Exception as e:
         print("Error fetching languages:", e)
