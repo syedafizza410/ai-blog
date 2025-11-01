@@ -1,8 +1,9 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-import os, json
+import os, json, time
 from dotenv import load_dotenv
 import google.generativeai as genai
 
@@ -70,8 +71,13 @@ Do not add explanations, just the array.
 
 @app.post("/generate")
 async def generate_blog(prompt: Prompt):
-    try:
-        structured_prompt = f"""
+    def event_generator():
+        # Initial "please wait" message
+        yield json.dumps({"status": "loading", "message": "AI is generating content..."}) + "\n"
+        time.sleep(0.5)
+
+        try:
+            structured_prompt = f"""
 Write a detailed, well-structured blog about: "{prompt.prompt}".
 The blog must be entirely written in {prompt.language}.
 Make it sound natural and native for {prompt.language} readers.
@@ -83,13 +89,15 @@ Formatting rules:
 - Short, clear paragraphs
 - Markdown formatting
 """
-        model = genai.GenerativeModel("models/gemini-2.0-flash")
-        response = model.generate_content(structured_prompt)
-        generated_text = getattr(response, "text", "").strip() or "No content generated."
-        return {"content": generated_text}
-    except Exception as e:
-        print("Error generating blog:", e)
-        return {"error": str(e)}
+            model = genai.GenerativeModel("models/gemini-2.0-flash")
+            response = model.generate_content(structured_prompt)
+            generated_text = getattr(response, "text", "").strip() or "No content generated."
+
+            yield json.dumps({"status": "done", "content": generated_text}) + "\n"
+        except Exception as e:
+            yield json.dumps({"status": "error", "message": str(e)}) + "\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/blogs", response_model=BlogResponse)
 def create_blog(blog: BlogCreate, db: Session = Depends(get_db)):
