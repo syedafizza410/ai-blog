@@ -10,22 +10,17 @@ from database import SessionLocal, engine
 from models import Base, Blog
 from schemas import BlogCreate, BlogResponse
 
-# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
     raise ValueError("GEMINI_API_KEY is missing in .env file!")
 
-# Configure Google Gemini API
 genai.configure(api_key=API_KEY)
 
-# Create database tables
 Base.metadata.create_all(bind=engine)
 
-# Initialize FastAPI app
 app = FastAPI(title="AI Blog API")
 
-# Enable CORS for all origins
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -33,7 +28,6 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# Database session dependency
 def get_db():
     db = SessionLocal()
     try:
@@ -41,17 +35,14 @@ def get_db():
     finally:
         db.close()
 
-# Request model for blog generation
 class Prompt(BaseModel):
     prompt: str
     language: str = "English"
 
-# Root endpoint
 @app.get("/")
 def root():
     return {"message": "AI Blog Backend is running!"}
 
-# Endpoint to get list of languages
 @app.get("/languages")
 async def get_languages():
     try:
@@ -78,7 +69,6 @@ async def get_languages():
         print("Error fetching languages:", e)
         return {"languages": []}
 
-# Endpoint to generate a blog
 @app.post("/generate")
 async def generate_blog(prompt: Prompt):
     try:
@@ -102,7 +92,6 @@ async def generate_blog(prompt: Prompt):
         print("Error generating blog:", e)
         return {"error": str(e)}
 
-# CRUD endpoints for blog storage
 @app.post("/blogs", response_model=BlogResponse)
 def create_blog(blog: BlogCreate, db: Session = Depends(get_db)):
     db_blog = Blog(title=blog.title, content=blog.content, tags=blog.tags)
