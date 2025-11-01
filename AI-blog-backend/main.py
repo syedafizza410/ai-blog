@@ -91,7 +91,9 @@ Formatting rules:
 """
             model = genai.GenerativeModel("models/gemini-2.0-flash")
             response = model.generate_content(structured_prompt)
-            generated_text = getattr(response, "text", "").strip() or "No content generated."
+
+            # ✅ Use output_text instead of text
+            generated_text = getattr(response, "output_text", "").strip() or "No content generated."
 
             yield json.dumps({"status": "done", "content": generated_text}) + "\n"
         except Exception as e:
